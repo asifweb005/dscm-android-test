@@ -22,7 +22,7 @@ jobs:
       - name: Sign in to DSCM with Google
         uses: reactivecircus/android-emulator-runner@v2
         env:
-          APK_URL: "https://github.com/asifweb005/dscm-android-test/releases/download/apk-v1/app-release.apk"
+          APK_URL: "https://github.com/asifweb005/dscm-android-test/releases/download/apk-v2/app-release.apk"
           GOOGLE_PASSWORD: ${{ secrets.GOOGLE_PASSWORD }}
         with:
           api-level: 30
