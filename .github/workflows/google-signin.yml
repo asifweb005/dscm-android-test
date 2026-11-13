@@ -58,22 +58,18 @@ jobs:
             python3 -c 'import subprocess,time; subprocess.run(["adb","shell","input","tap","540","913"]); time.sleep(1); subprocess.run(["adb","shell","input","text","am61819166@gmail.com"]); print("EMAIL_TYPED")' || true
             sleep 1
             adb exec-out screencap -p > output/05b-email-typed.png
-            adb shell input keyevent 4
-            sleep 1
-            adb shell uiautomator dump /sdcard/dump4b.xml || true
-            adb pull /sdcard/dump4b.xml output/dump4b.xml || true
-            python3 -c 'import re,os; xml=open("output/dump4b.xml").read(); m=re.search(r"text=.Next.[^>]*bounds=.(\d+),(\d+).{2}(\d+),(\d+).", xml); print("NEXT_TAP" if m else "NO_NEXT"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
-            sleep 8
+            adb shell input keyevent 66
+            sleep 6
+            adb exec-out screencap -p > output/05c-after-email-next.png
+            adb shell uiautomator dump /sdcard/dump4c.xml || true
+            adb pull /sdcard/dump4c.xml output/dump4c.xml || true
+            sleep 2
             adb exec-out screencap -p > output/06-password-page.png
             adb shell uiautomator dump /sdcard/dump5.xml || true
             adb pull /sdcard/dump5.xml output/dump5.xml || true
-            python3 -c 'import os,subprocess,time; pw=os.environ.get("GOOGLE_PASSWORD",""); esc=pw.replace("%","%%").replace(" ","%s"); arg="\x27"+esc.replace("\x27","\x27\\\x27\x27")+"\x27"; subprocess.run(["adb","shell","input","tap","540","913"]); time.sleep(1); subprocess.run(["adb","shell","input","text",arg]); print("PW_TYPED_LEN", len(pw))' || true
+            python3 -c 'import re,os,subprocess,time; xml=open("output/dump5.xml").read(); ok=("password" in xml.lower()); m=re.search(r"class=.android.widget.EditText.[^>]*bounds=.(\d+),(\d+).{2}(\d+),(\d+).", xml); pw=os.environ.get("GOOGLE_PASSWORD","") if (ok and m) else ""; esc=pw.replace("%","%%").replace(" ","%s"); arg="\x27"+esc.replace("\x27","\x27\\x27\x27")+"\x27"; print("PW_PAGE_OK" if ok else "PW_PAGE_MISSING", "FIELD_OK" if m else "NO_FIELD"); subprocess.run(["adb","shell","input","tap",str((int(m.group(1))+int(m.group(3)))//2),str((int(m.group(2))+int(m.group(4)))//2)]) if (ok and m) else None; time.sleep(1); subprocess.run(["adb","shell","input","text",arg]) if (ok and m) else None; print("PW_TYPED_LEN", len(pw))' || true
             sleep 1
-            adb shell input keyevent 4
-            sleep 1
-            adb shell uiautomator dump /sdcard/dump5b.xml || true
-            adb pull /sdcard/dump5b.xml output/dump5b.xml || true
-            python3 -c 'import re,os; xml=open("output/dump5b.xml").read(); m=re.search(r"text=.Next.[^>]*bounds=.(\d+),(\d+).{2}(\d+),(\d+).", xml); print("NEXT_TAP" if m else "NO_NEXT"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            adb shell input keyevent 66
             sleep 12
             adb exec-out screencap -p > output/07-2step.png
             adb shell uiautomator dump /sdcard/dump6.xml || true
