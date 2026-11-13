@@ -58,14 +58,22 @@ jobs:
             python3 -c 'import subprocess,time; subprocess.run(["adb","shell","input","tap","540","913"]); time.sleep(1); subprocess.run(["adb","shell","input","text","am61819166@gmail.com"]); print("EMAIL_TYPED")' || true
             sleep 1
             adb exec-out screencap -p > output/05b-email-typed.png
-            adb shell input tap 916 1493
+            adb shell input keyevent 4
+            sleep 1
+            adb shell uiautomator dump /sdcard/dump4b.xml || true
+            adb pull /sdcard/dump4b.xml output/dump4b.xml || true
+            python3 -c 'import re,os; xml=open("output/dump4b.xml").read(); m=re.search(r"text=.Next.[^>]*bounds=.(\d+),(\d+).{2}(\d+),(\d+).", xml); print("NEXT_TAP" if m else "NO_NEXT"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
             sleep 8
             adb exec-out screencap -p > output/06-password-page.png
             adb shell uiautomator dump /sdcard/dump5.xml || true
             adb pull /sdcard/dump5.xml output/dump5.xml || true
             python3 -c 'import os,subprocess,time; pw=os.environ.get("GOOGLE_PASSWORD",""); esc=pw.replace("%","%%").replace(" ","%s"); arg="\x27"+esc.replace("\x27","\x27\\\x27\x27")+"\x27"; subprocess.run(["adb","shell","input","tap","540","913"]); time.sleep(1); subprocess.run(["adb","shell","input","text",arg]); print("PW_TYPED_LEN", len(pw))' || true
             sleep 1
-            adb shell input tap 916 1493
+            adb shell input keyevent 4
+            sleep 1
+            adb shell uiautomator dump /sdcard/dump5b.xml || true
+            adb pull /sdcard/dump5b.xml output/dump5b.xml || true
+            python3 -c 'import re,os; xml=open("output/dump5b.xml").read(); m=re.search(r"text=.Next.[^>]*bounds=.(\d+),(\d+).{2}(\d+),(\d+).", xml); print("NEXT_TAP" if m else "NO_NEXT"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
             sleep 12
             adb exec-out screencap -p > output/07-2step.png
             adb shell uiautomator dump /sdcard/dump6.xml || true
@@ -83,6 +91,7 @@ jobs:
             adb shell uiautomator dump /sdcard/dump8.xml || true
             adb pull /sdcard/dump8.xml output/dump8.xml || true
             python3 -c 'import re,os,subprocess,time; xml=open("output/dump8.xml").read(); m=re.search(r"class=.android.widget.EditText.[^>]*bounds=.(\d+),(\d+).{2}(\d+),(\d+).", xml) if "com.paradox.dscm" in xml else None; print("NAME_FIELD" if m else "NO_NAME_FIELD"); subprocess.run(["adb","shell","input","tap",str((int(m.group(1))+int(m.group(3)))//2),str((int(m.group(2))+int(m.group(4)))//2)]) if m else None; time.sleep(1); subprocess.run(["adb","shell","input","text","AXF"]) if m else None' || true
+            adb shell input keyevent 4
             sleep 2
             adb shell uiautomator dump /sdcard/dump9.xml || true
             adb pull /sdcard/dump9.xml output/dump9.xml || true
