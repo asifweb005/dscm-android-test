@@ -81,6 +81,10 @@ jobs:
             adb exec-out screencap -p > output/08-after-approval.png
             adb shell uiautomator dump /sdcard/dump7.xml || true
             adb pull /sdcard/dump7.xml output/dump7.xml || true
+            python3 -c 'import re,os; xml=open("output/dump7.xml").read(); m=re.search(r"text=.Never.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) if "Save password?" in xml else None; ok=m and int(m.group(3))>int(m.group(1)) and int(m.group(4))>int(m.group(2)); print("SHEET_DISMISSED" if ok else "NO_SHEET"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if ok else None' || true
+            sleep 2
+            adb shell uiautomator dump /sdcard/dump7.xml || true
+            adb pull /sdcard/dump7.xml output/dump7.xml || true
             adb shell input swipe 540 1500 540 500 300
             sleep 1
             adb shell input swipe 540 1500 540 500 300
