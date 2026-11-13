@@ -50,6 +50,15 @@ jobs:
             adb exec-out screencap -p > output/04-later.png
             adb shell uiautomator dump /sdcard/dump3.xml || true
             adb pull /sdcard/dump3.xml output/dump3.xml || true
+            adb shell input tap 539 1705
+            sleep 8
+            adb exec-out screencap -p > output/05-after-chrome-accept.png
+            adb shell uiautomator dump /sdcard/dump4.xml || true
+            adb pull /sdcard/dump4.xml output/dump4.xml || true
+            sleep 15
+            adb exec-out screencap -p > output/06-next.png
+            adb shell uiautomator dump /sdcard/dump5.xml || true
+            adb pull /sdcard/dump5.xml output/dump5.xml || true
             adb shell dumpsys account > output/accounts.txt || true
             adb logcat -d > output/logcat.txt || true
             ls -la output
