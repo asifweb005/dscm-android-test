@@ -67,7 +67,7 @@ jobs:
             adb exec-out screencap -p > output/06-password-page.png
             adb shell uiautomator dump /sdcard/dump5.xml || true
             adb pull /sdcard/dump5.xml output/dump5.xml || true
-            python3 -c 'import re,os,subprocess,time; xml=open("output/dump5.xml").read(); ok=("password" in xml.lower()); m=re.search(r"class=.android.widget.EditText.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml); pw=os.environ.get("GOOGLE_PASSWORD","") if (ok and m) else ""; esc=pw.replace("%","%%").replace(" ","%s"); arg="\x27"+esc.replace("\x27","\x27\\x27\x27")+"\x27"; print("PW_PAGE_OK" if ok else "PW_PAGE_MISSING", "FIELD_OK" if m else "NO_FIELD"); subprocess.run(["adb","shell","input","tap",str((int(m.group(1))+int(m.group(3)))//2),str((int(m.group(2))+int(m.group(4)))//2)]) if (ok and m) else None; time.sleep(1); subprocess.run(["adb","shell","input","text",arg]) if (ok and m) else None; print("PW_TYPED_LEN", len(pw))' || true
+            python3 -c 'import re,os,subprocess,time; xml=open("output/dump5.xml").read(); ok=("password" in xml.lower()); m=re.search(r"class=.android.widget.EditText.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml); pw=os.environ.get("GOOGLE_PASSWORD","") if (ok and m) else ""; esc=pw.replace("%","%%").replace(" ","%s"); arg="\x27"+esc.replace("\x27","\x27\\\x27\x27")+"\x27"; print("PW_PAGE_OK" if ok else "PW_PAGE_MISSING", "FIELD_OK" if m else "NO_FIELD"); subprocess.run(["adb","shell","input","tap",str((int(m.group(1))+int(m.group(3)))//2),str((int(m.group(2))+int(m.group(4)))//2)]) if (ok and m) else None; time.sleep(1); subprocess.run(["adb","shell","input","text",arg]) if (ok and m) else None; print("PW_TYPED_LEN", len(pw))' || true
             sleep 1
             adb shell input keyevent 66
             sleep 12
@@ -81,22 +81,46 @@ jobs:
             adb exec-out screencap -p > output/08-after-approval.png
             adb shell uiautomator dump /sdcard/dump7.xml || true
             adb pull /sdcard/dump7.xml output/dump7.xml || true
-            python3 -c 'import re,os; xml=open("output/dump7.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Continue","Allow","I agree","Looks good","Done","Got it"]]; m=next((x for x in ms if x), None); print("CONSENT_TAP" if m else "NO_CONSENT"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
-            sleep 12
+            adb shell input swipe 540 1500 540 500 300
+            sleep 1
+            adb shell input swipe 540 1500 540 500 300
+            sleep 1
+            adb exec-out screencap -p > output/08b-consent-scrolled.png
+            adb shell uiautomator dump /sdcard/dump7b.xml || true
+            adb pull /sdcard/dump7b.xml output/dump7b.xml || true
+            python3 -c 'import re,os; xml=open("output/dump7b.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Continue","Allow","I agree","Looks good","Done","Got it"]]; m=next((x for x in ms if x and int(x.group(3))>int(x.group(1)) and int(x.group(4))>int(x.group(2))), None); print("CONSENT_TAP" if m else "NO_CONSENT"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            sleep 15
             adb exec-out screencap -p > output/09-after-consent.png
             adb shell uiautomator dump /sdcard/dump8.xml || true
             adb pull /sdcard/dump8.xml output/dump8.xml || true
-            python3 -c 'import re,os,subprocess,time; xml=open("output/dump8.xml").read(); m=re.search(r"class=.android.widget.EditText.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) if "com.paradox.dscm" in xml else None; print("NAME_FIELD" if m else "NO_NAME_FIELD"); subprocess.run(["adb","shell","input","tap",str((int(m.group(1))+int(m.group(3)))//2),str((int(m.group(2))+int(m.group(4)))//2)]) if m else None; time.sleep(1); subprocess.run(["adb","shell","input","text","AXF"]) if m else None' || true
+            python3 -c 'import re,os; xml=open("output/dump8.xml").read(); m=re.search(r"(?:text|content-desc)=.[^>]*am61819166@gmail.com[^>]*.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) if "Choose an account" in xml else None; print("ACCOUNT_TAP" if m else "NO_CHOOSER"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            sleep 10
+            adb exec-out screencap -p > output/09b-after-account.png
+            adb shell uiautomator dump /sdcard/dump8b.xml || true
+            adb pull /sdcard/dump8b.xml output/dump8b.xml || true
+            adb shell input swipe 540 1500 540 500 300
+            sleep 1
+            adb shell input swipe 540 1500 540 500 300
+            sleep 1
+            adb exec-out screencap -p > output/09bb-consent2-scrolled.png
+            adb shell uiautomator dump /sdcard/dump8bb.xml || true
+            adb pull /sdcard/dump8bb.xml output/dump8bb.xml || true
+            python3 -c 'import re,os; xml=open("output/dump8bb.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Continue","Allow","I agree","Looks good","Done","Got it"]] if "to access this info about you" in xml else []; m=next((x for x in ms if x and int(x.group(3))>int(x.group(1)) and int(x.group(4))>int(x.group(2))), None); print("CONSENT2_TAP" if m else "NO_CONSENT2"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            sleep 15
+            adb exec-out screencap -p > output/09c-after-consent2.png
+            adb shell uiautomator dump /sdcard/dump8c.xml || true
+            adb pull /sdcard/dump8c.xml output/dump8c.xml || true
+            python3 -c 'import re,os,subprocess,time; xml=open("output/dump8c.xml").read(); m=re.search(r"class=.android.widget.EditText.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) if "com.paradox.dscm" in xml else None; print("NAME_FIELD" if m else "NO_NAME_FIELD"); subprocess.run(["adb","shell","input","tap",str((int(m.group(1))+int(m.group(3)))//2),str((int(m.group(2))+int(m.group(4)))//2)]) if m else None; time.sleep(1); subprocess.run(["adb","shell","input","text","AXF"]) if m else None' || true
             adb shell input keyevent 4
             sleep 2
             adb shell uiautomator dump /sdcard/dump9.xml || true
             adb pull /sdcard/dump9.xml output/dump9.xml || true
-            python3 -c 'import re,os; xml=open("output/dump9.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Save","Continue","Done","OK","Start","Confirm","Create","GO","Go"]] if "com.paradox.dscm" in xml else []; m=next((x for x in ms if x), None); print("NAME_CONFIRM_TAP" if m else "NO_CONFIRM"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            python3 -c 'import re,os; xml=open("output/dump9.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Save","Continue","Done","OK","Start","Confirm","Create","GO","Go"]] if "com.paradox.dscm" in xml else []; m=next((x for x in ms if x and int(x.group(3))>int(x.group(1)) and int(x.group(4))>int(x.group(2))), None); print("NAME_CONFIRM_TAP" if m else "NO_CONFIRM"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
             sleep 8
             adb exec-out screencap -p > output/11-final.png
             adb shell uiautomator dump /sdcard/dump10.xml || true
             adb pull /sdcard/dump10.xml output/dump10.xml || true
-            python3 -c 'import re,os; xml=open("output/dump10.xml").read(); ms=[re.search(r"(?:text|content-desc)=.[^>]*"+p+r"[^>]*.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Profile","Room"]]; m=next((x for x in ms if x), None); print("PROFILE_TAP" if m else "NO_PROFILE"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            python3 -c 'import re,os; xml=open("output/dump10.xml").read(); ms=[re.search(r"(?:text|content-desc)=.[^>]*"+p+r"[^>]*.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Profile","Room"]]; m=next((x for x in ms if x and int(x.group(3))>int(x.group(1)) and int(x.group(4))>int(x.group(2))), None); print("PROFILE_TAP" if m else "NO_PROFILE"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
             sleep 6
             adb exec-out screencap -p > output/12-profile.png
             adb shell uiautomator dump /sdcard/dump11.xml || true
