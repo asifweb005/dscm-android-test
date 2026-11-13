@@ -59,6 +59,15 @@ jobs:
             adb exec-out screencap -p > output/06-next.png
             adb shell uiautomator dump /sdcard/dump5.xml || true
             adb pull /sdcard/dump5.xml output/dump5.xml || true
+            adb shell input tap 161 1689
+            sleep 10
+            adb exec-out screencap -p > output/07-after-nothanks.png
+            adb shell uiautomator dump /sdcard/dump6.xml || true
+            adb pull /sdcard/dump6.xml output/dump6.xml || true
+            sleep 20
+            adb exec-out screencap -p > output/08-signin.png
+            adb shell uiautomator dump /sdcard/dump7.xml || true
+            adb pull /sdcard/dump7.xml output/dump7.xml || true
             adb shell dumpsys account > output/accounts.txt || true
             adb logcat -d > output/logcat.txt || true
             ls -la output
