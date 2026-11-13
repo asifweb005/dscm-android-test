@@ -6,7 +6,7 @@ on:
       apk_url:
         description: "APK download URL"
         required: false
-        default: "https://github.com/asifweb005/dscm-android-test/releases/download/apk-v1/app-release.apk"
+        default: "https://github.com/asifweb005/dscm-android-test/releases/download/apk-v2/app-release.apk"
 
 jobs:
   google-probe:
