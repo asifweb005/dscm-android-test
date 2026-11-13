@@ -41,7 +41,7 @@ jobs:
             adb exec-out screencap -p > output/02-welcome.png
             adb shell uiautomator dump /sdcard/dump1.xml || true
             adb pull /sdcard/dump1.xml output/dump1.xml || true
-            python3 -c 'import re,os; xml=open("output/dump1.xml").read(); m=re.search(r"content-desc=.Continue with Google.[^>]*bounds=.(\d+),(\d+).{2}(\d+),(\d+).", xml); x=(int(m.group(1))+int(m.group(3)))//2 if m else 540; y=(int(m.group(2))+int(m.group(4)))//2 if m else 1154; print("TAP", x, y); os.system("adb shell input tap %d %d" % (x, y))' || true
+            python3 -c 'import re,os; xml=open("output/dump1.xml").read(); m=re.search(r"content-desc=.Continue with Google.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml); x=(int(m.group(1))+int(m.group(3)))//2 if m else 540; y=(int(m.group(2))+int(m.group(4)))//2 if m else 1154; print("TAP", x, y); os.system("adb shell input tap %d %d" % (x, y))' || true
             sleep 10
             adb exec-out screencap -p > output/03-after-google-tap.png
             adb shell uiautomator dump /sdcard/dump2.xml || true
