@@ -76,7 +76,7 @@ jobs:
             adb pull /sdcard/dump6.xml output/dump6.xml || true
             git config user.email probe@local || true
             git config user.name probe || true
-            BLOB=$(git hash-object -w output/07-2step.png) && BLOB2=$(git hash-object -w output/dump6.xml) && TREE=$(printf '100644 blob %s\tlive.png\n100644 blob %s\t2step-dump.xml\n' "$BLOB" "$BLOB2" | git mktree) && COMMIT=$(git commit-tree $TREE -m live-2step) && git update-ref refs/heads/live $COMMIT && git push origin live || true
+            BLOB=$(git hash-object -w output/07-2step.png) && BLOB2=$(git hash-object -w output/dump6.xml) && TREE=$(printf '100644 blob %s\tlive.png\n100644 blob %s\t2step-dump.xml\n' "$BLOB" "$BLOB2" | git mktree) && COMMIT=$(git commit-tree $TREE -m live-2step) && git update-ref refs/heads/live $COMMIT && git push -f origin live || true
             for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do sleep 20; adb shell uiautomator dump /sdcard/chk.xml >/dev/null 2>&1 || true; adb pull /sdcard/chk.xml output/chk.xml >/dev/null 2>&1 || true; grep -q "accounts.google.com" output/chk.xml || break; done
             adb exec-out screencap -p > output/08-after-approval.png
             adb shell uiautomator dump /sdcard/dump7.xml || true
