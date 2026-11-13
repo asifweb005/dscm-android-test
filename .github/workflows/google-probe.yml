@@ -1,0 +1,77 @@
+name: Google Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "APK download URL"
+        required: false
+        default: "https://github.com/asifweb005/dscm-android-test/releases/download/apk-v1/app-release.apk"
+
+jobs:
+  google-probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install app, tap Continue with Google, capture screens
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          APK_URL: ${{ inputs.apk_url }}
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            mkdir -p output
+            curl -L "$APK_URL" -o app.apk
+            adb install -r app.apk
+            adb shell monkey -p com.paradox.dscm -c android.intent.category.LAUNCHER 1 || true
+            sleep 20
+            adb exec-out screencap -p > output/02-welcome.png
+            adb shell uiautomator dump /sdcard/dump1.xml || true
+            adb pull /sdcard/dump1.xml output/dump1.xml || true
+            python3 - <<'PYEOF'
+            import re, subprocess
+            try:
+                xml = open('output/dump1.xml').read()
+            except Exception:
+                xml = ''
+            m = re.search(r'content-desc="Continue with Google"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
+            if m:
+                x = (int(m.group(1)) + int(m.group(3))) // 2
+                y = (int(m.group(2)) + int(m.group(4))) // 2
+            else:
+                x, y = 540, 1154
+            print('Tapping Continue with Google at', x, y)
+            subprocess.run(['adb', 'shell', 'input', 'tap', str(x), str(y)])
+            PYEOF
+            sleep 10
+            adb exec-out screencap -p > output/03-after-google-tap.png
+            adb shell uiautomator dump /sdcard/dump2.xml || true
+            adb pull /sdcard/dump2.xml output/dump2.xml || true
+            sleep 25
+            adb exec-out screencap -p > output/04-later.png
+            adb shell uiautomator dump /sdcard/dump3.xml || true
+            adb pull /sdcard/dump3.xml output/dump3.xml || true
+            adb shell dumpsys account > output/accounts.txt || true
+            adb logcat -d > output/logcat.txt || true
+            ls -la output
+
+      - name: Upload probe output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-probe-output
+          path: output/
+          if-no-files-found: warn
