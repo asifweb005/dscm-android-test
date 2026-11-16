@@ -113,7 +113,7 @@ jobs:
             adb exec-out screencap -p > output/09bb-consent2-scrolled.png
             adb shell uiautomator dump /sdcard/dump8bb.xml || true
             adb pull /sdcard/dump8bb.xml output/dump8bb.xml || true
-            python3 -c 'import re,os; xml=open("output/dump8bb.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Continue","Allow","I agree","Looks good","Done","Got it"]] if "to access this info about you" in xml else []; m=next((x for x in ms if x and int(x.group(3))>int(x.group(1)) and int(x.group(4))>int(x.group(2))), None); print("CONSENT2_TAP" if m else "NO_CONSENT2"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            python3 -c 'import re,os; xml=open("output/dump8bb.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Continue","Allow","I agree","Looks good","Done","Got it"]] if "fayyazchishti3@gmail.com" in xml else []; m=next((x for x in ms if x and int(x.group(3))>int(x.group(1)) and int(x.group(4))>int(x.group(2))), None); print("CONSENT2_TAP" if m else "NO_CONSENT2"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
             sleep 10
             adb exec-out screencap -p > output/09c-after-consent2.png
             adb shell uiautomator dump /sdcard/dump8c.xml || true
@@ -134,7 +134,7 @@ jobs:
             sleep 1
             adb shell uiautomator dump /sdcard/dumpR2b.xml || true
             adb pull /sdcard/dumpR2b.xml output/dumpR2b.xml || true
-            python3 -c 'import re,os; xml=open("output/dumpR2b.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Continue","Allow","I agree","Looks good","Done","Got it"]] if "to access this info about you" in xml else []; m=next((x for x in ms if x and int(x.group(3))>int(x.group(1)) and int(x.group(4))>int(x.group(2))), None); print("RETRY_CONSENT_TAP" if m else "NO_RETRY_CONSENT"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            python3 -c 'import re,os; xml=open("output/dumpR2b.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Continue","Allow","I agree","Looks good","Done","Got it"]] if "fayyazchishti3@gmail.com" in xml else []; m=next((x for x in ms if x and int(x.group(3))>int(x.group(1)) and int(x.group(4))>int(x.group(2))), None); print("RETRY_CONSENT_TAP" if m else "NO_RETRY_CONSENT"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
             sleep 12
             adb shell uiautomator dump /sdcard/dump8c.xml || true
             adb pull /sdcard/dump8c.xml output/dump8c.xml || true
