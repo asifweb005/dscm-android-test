@@ -138,6 +138,10 @@ jobs:
             sleep 12
             adb shell uiautomator dump /sdcard/dump8c.xml || true
             adb pull /sdcard/dump8c.xml output/dump8c.xml || true
+            python3 -c 'import re,os; xml=open("output/dump8c.xml").read(); m=re.search(r"content-desc=.Decline.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) if "Allow notifications?" in xml else None; print("NOTIF_DECLINED" if m else "NO_NOTIF"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            sleep 3
+            adb shell uiautomator dump /sdcard/dump8c.xml || true
+            adb pull /sdcard/dump8c.xml output/dump8c.xml || true
             python3 -c 'import re,os,subprocess,time; xml=open("output/dump8c.xml").read(); m=re.search(r"class=.android.widget.EditText.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) if "com.paradox.dscm" in xml else None; print("NAME_FIELD" if m else "NO_NAME_FIELD"); subprocess.run(["adb","shell","input","tap",str((int(m.group(1))+int(m.group(3)))//2),str((int(m.group(2))+int(m.group(4)))//2)]) if m else None; time.sleep(1); subprocess.run(["adb","shell","input","text","AXF"]) if m else None' || true
             adb shell input keyevent 4
             sleep 2
