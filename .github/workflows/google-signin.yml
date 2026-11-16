@@ -33,8 +33,10 @@ jobs:
           arch: x86_64
           profile: pixel
           disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
             adb wait-for-device
+            for i in $(seq 1 30); do b=$(adb shell getprop sys.boot_completed | tr -d '\r'); if [ "$b" = "1" ]; then echo "BOOT_OK $i"; break; fi; sleep 5; done
             adb shell settings put global window_animation_scale 0 || true
             adb shell settings put global transition_animation_scale 0 || true
             adb shell settings put global animator_duration_scale 0 || true
