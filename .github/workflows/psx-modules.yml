@@ -68,7 +68,7 @@ jobs:
             adb exec-out screencap -p > output/05-final.png || true
             adb shell uiautomator dump /sdcard/dump5.xml || true
             adb pull /sdcard/dump5.xml output/dump5.xml || true
-            for i in $(seq 1 24); do adb exec-out screencap -p > output/scroll-$(printf %02d $i).png || true; adb shell uiautomator dump /sdcard/s.xml || true; adb pull /sdcard/s.xml output/scroll-$(printf %02d $i).xml || true; adb shell input swipe 540 1800 540 600 400 || true; sleep 2; done
+            for i in $(seq 1 24); do adb exec-out screencap -p > output/scroll-$(printf %02d $i).png || true; adb shell uiautomator dump /sdcard/s.xml || true; adb pull /sdcard/s.xml output/scroll-$(printf %02d $i).xml || true; adb shell input swipe 540 1400 540 400 500 || true; sleep 2; done
             adb shell dumpsys package com.paradox.psxanalyze > output/package.txt || true
             adb logcat -d > output/logcat.txt || true
             ls -la output
