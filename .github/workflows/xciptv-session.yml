@@ -1,0 +1,71 @@
+name: XCIPTV Session
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "APKM bundle download URL"
+        required: false
+        default: "https://github.com/asifweb005/dscm-android-test/releases/download/xciptv-v7/xciptv.apkm"
+
+permissions:
+  contents: read
+
+jobs:
+  xciptv-session:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install XCIPTV, launch it, capture screens
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          APK_URL: ${{ inputs.apk_url }}
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          profile: pixel
+          disable-animations: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            mkdir -p output
+            adb wait-for-device || true
+            for i in $(seq 1 30); do B=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); echo "boot check $i: $B"; if [ "$B" = "1" ]; then break; fi; sleep 5; done
+            adb shell settings put global window_animation_scale 0 || true
+            adb shell settings put global transition_animation_scale 0 || true
+            adb shell settings put global animator_duration_scale 0 || true
+            adb devices
+            adb exec-out screencap -p > output/01-home.png || true
+            curl -L "$APK_URL" -o bundle.apkm
+            ls -lh bundle.apkm
+            unzip -o bundle.apkm -d bundle || true
+            ls -lh bundle
+            adb install-multiple -r bundle/base.apk bundle/split_config.x86_64.apk bundle/split_config.en.apk bundle/split_config.xxhdpi.apk 2>&1 | tee output/install.txt
+            adb shell monkey -p com.nathnetwork.xciptv -c android.intent.category.LAUNCHER 1 || true
+            sleep 20
+            adb exec-out screencap -p > output/02-first.png || true
+            adb shell uiautomator dump /sdcard/dump1.xml || true
+            adb pull /sdcard/dump1.xml output/dump1.xml || true
+            sleep 15
+            adb exec-out screencap -p > output/03-later.png || true
+            adb shell uiautomator dump /sdcard/dump2.xml || true
+            adb pull /sdcard/dump2.xml output/dump2.xml || true
+            adb shell dumpsys package com.nathnetwork.xciptv > output/package.txt || true
+            adb logcat -d > output/logcat.txt || true
+            ls -la output
+
+      - name: Upload XCIPTV session output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xciptv-session-output
+          path: output/
+          if-no-files-found: warn
