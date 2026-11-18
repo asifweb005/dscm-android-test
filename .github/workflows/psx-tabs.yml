@@ -1,19 +1,16 @@
 name: PSX Tabs
-
 on:
   workflow_dispatch:
     inputs:
       apk_url:
         description: "APK download URL (direct .apk link)"
         required: true
-        default: "https://github.com/axf-1/PSX-Analyze/releases/download/untagged-3a1db9ed7e6c2a8c1d3c/app-release.apk"
+        default: "https://github.com/asifweb005/dscm-android-test/releases/download/psx-v1/app-release.apk"
         type: string
-
 permissions:
   contents: read
-
 jobs:
-  psx-modules:
+  psx-session:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -24,88 +21,177 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Install PSX Analyze, enter AXF, scroll-capture all Market modules
+      - name: Install PSX Analyze, enter name AXF if asked, capture screens
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
+          api-level: 30
           target: google_apis
           arch: x86_64
-          profile: pixel_6
-          force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          disable-animations: true
+          profile: pixel
+          disable-animations: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
-            echo "RAM $(( $(free -m | awk '/^Mem:/{print $2}') ))MB CPU $(nproc) disk $(df -h / | awk 'NR==2{print $4}')"
+            mkdir -p output
             adb wait-for-device
-            adb shell wm size 1080x2400 || true
-            adb shell wm density 420 || true
+            for i in $(seq 1 30); do
+              if adb shell getprop sys.boot_completed 2>/dev/null | grep -q 1; then
+                echo "boot completed after $i checks"
+                break
+              fi
+              sleep 5
+            done
             adb shell settings put global window_animation_scale 0 || true
             adb shell settings put global transition_animation_scale 0 || true
             adb shell settings put global animator_duration_scale 0 || true
-            adb shell settings put system screen_off_timeout 1800000 || true
-            adb shell svc power stayon true || true
-            mkdir -p output
-            curl -L -o /tmp/app.apk "${{ inputs.apk_url }}" || wget -O /tmp/app.apk "${{ inputs.apk_url }}"
-            ls -lh /tmp/app.apk
-            file /tmp/app.apk || true
-            adb install -r -g /tmp/app.apk > output/install.txt 2>&1 || { cat output/install.txt; exit 1; }
-            cat output/install.txt
-            adb shell pm list packages | grep -i psx > output/package.txt || adb shell pm list packages > output/package.txt
-            cat output/package.txt
-            adb shell monkey -p com.axf.psxanalyze -c android.intent.category.LAUNCHER 1 || true
-            sleep 5
-            adb exec-out screencap -p > output/01-home.png || true
-            adb shell uiautomator dump /sdcard/dump.xml || true
-            adb pull /sdcard/dump.xml output/dump01.xml || true
-            # Enter AXF, dismiss dialogs, open Market (default tab), scroll whole Market
-            adb shell input tap 540 1900 || true
+            adb devices
+            adb shell getprop ro.build.version.release
+            adb exec-out screencap -p > output/01-home.png
+            adb shell uiautomator dump /sdcard/dump1.xml
+            adb pull /sdcard/dump1.xml output/dump1.xml
+            APK_URL="${{ inputs.apk_url }}"
+            echo "Downloading $APK_URL"
+            curl -L "$APK_URL" -o app.apk
+            ls -lh app.apk
+            adb install -r app.apk 2>&1 | tee output/install.log
+            adb shell monkey -p com.paradox.psxanalyze -c android.intent.category.LAUNCHER 1
+            sleep 20
+            adb exec-out screencap -p > output/02-first.png
+            adb shell uiautomator dump /sdcard/dump1.xml
+            adb pull /sdcard/dump1.xml output/dump1.xml
+            python3 -c 'import re,os,subprocess,time; xml=open("output/dump1.xml").read(); m=re.search(r"class=.android.widget.EditText. *?bounds=.\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\].", xml); print("edittext match:", bool(m)); [subprocess.run(["adb","shell","input","tap",str((int(m.group(1))+int(m.group(3)))//2),str((int(m.group(2))+int(m.group(4)))//2)]), time.sleep(2), subprocess.run(["adb","shell","input","text","AXF"]), time.sleep(2)] if m else None; print("done")'
+            adb shell input keyevent 66
             sleep 3
-            adb shell input text AXF || true
-            sleep 2
-            adb shell input tap 540 1000 || true
-            sleep 2
-            adb shell input tap 540 700 || true
-            sleep 2
-            adb exec-out screencap -p > output/02-after-name.png || true
-            adb shell uiautomator dump /sdcard/dump.xml || true
-            adb pull /sdcard/dump.xml output/dump02.xml || true
-            # --- Tab capture: Stocks, Portfolio, Events, News (bottom tab bar y=2150) ---
-            # Stocks (x=324)
-            adb shell input tap 324 2150 || true
+            adb exec-out screencap -p > output/03-name-entered.png
+            adb shell uiautomator dump /sdcard/dump1.xml
+            adb pull /sdcard/dump1.xml output/dump1.xml
+            sleep 3
+            adb shell input tap 540 1900
+            sleep 3
+            adb exec-out screencap -p > output/04-after-name.png
+            adb shell uiautomator dump /sdcard/dump1.xml
+            adb pull /sdcard/dump1.xml output/dump1.xml
+            adb shell input tap 540 1200
+            sleep 3
+            adb exec-out screencap -p > output/05-final.png
+            adb shell uiautomator dump /sdcard/dump1.xml
+            adb pull /sdcard/dump1.xml output/dump1.xml
+            adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp' > output/focus.txt || true
+            adb shell dumpsys package com.paradox.psxanalyze > output/package.txt || true
+            adb logcat -d > output/logcat.txt || true
+            ls -la output
+            # --- PSX Tabs capture (app still open on Market home) ---
+            adb shell "dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'" > output/focus.txt || true
+            adb shell monkey -p com.paradox.psxanalyze -c android.intent.category.LAUNCHER 1 || true
+            sleep 3
+            # Stocks tab
+            adb shell input tap 324 2150
             sleep 4
             adb exec-out screencap -p > output/tab-stocks-1.png || true
             adb shell uiautomator dump /sdcard/tab-stocks-1.xml || true
-            adb pull /sdcard/tab-stocks-1.xml output/tab-stocks-1.xml || true
-            for i in 2 3 4 5; do adb shell input swipe 540 1400 540 400 500 || true; sleep 2; adb exec-out screencap -p > output/tab-stocks-$i.png || true; adb shell uiautomator dump /sdcard/tab-stocks-$i.xml || true; adb pull /sdcard/tab-stocks-$i.xml output/tab-stocks-$i.xml || true; done
-            # Portfolio (x=540)
-            adb shell input tap 540 2150 || true
+            adb pull /sdcard/tab-stocks-1.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-stocks-2.png || true
+            adb shell uiautomator dump /sdcard/tab-stocks-2.xml || true
+            adb pull /sdcard/tab-stocks-2.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-stocks-3.png || true
+            adb shell uiautomator dump /sdcard/tab-stocks-3.xml || true
+            adb pull /sdcard/tab-stocks-3.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-stocks-4.png || true
+            adb shell uiautomator dump /sdcard/tab-stocks-4.xml || true
+            adb pull /sdcard/tab-stocks-4.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-stocks-5.png || true
+            adb shell uiautomator dump /sdcard/tab-stocks-5.xml || true
+            adb pull /sdcard/tab-stocks-5.xml output/ || true
+            # Portfolio tab
+            adb shell input tap 540 2150
             sleep 4
             adb exec-out screencap -p > output/tab-portfolio-1.png || true
             adb shell uiautomator dump /sdcard/tab-portfolio-1.xml || true
-            adb pull /sdcard/tab-portfolio-1.xml output/tab-portfolio-1.xml || true
-            for i in 2 3 4 5; do adb shell input swipe 540 1400 540 400 500 || true; sleep 2; adb exec-out screencap -p > output/tab-portfolio-$i.png || true; adb shell uiautomator dump /sdcard/tab-portfolio-$i.xml || true; adb pull /sdcard/tab-portfolio-$i.xml output/tab-portfolio-$i.xml || true; done
-            # Events (x=756)
-            adb shell input tap 756 2150 || true
+            adb pull /sdcard/tab-portfolio-1.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-portfolio-2.png || true
+            adb shell uiautomator dump /sdcard/tab-portfolio-2.xml || true
+            adb pull /sdcard/tab-portfolio-2.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-portfolio-3.png || true
+            adb shell uiautomator dump /sdcard/tab-portfolio-3.xml || true
+            adb pull /sdcard/tab-portfolio-3.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-portfolio-4.png || true
+            adb shell uiautomator dump /sdcard/tab-portfolio-4.xml || true
+            adb pull /sdcard/tab-portfolio-4.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-portfolio-5.png || true
+            adb shell uiautomator dump /sdcard/tab-portfolio-5.xml || true
+            adb pull /sdcard/tab-portfolio-5.xml output/ || true
+            # Events tab
+            adb shell input tap 756 2150
             sleep 4
             adb exec-out screencap -p > output/tab-events-1.png || true
             adb shell uiautomator dump /sdcard/tab-events-1.xml || true
-            adb pull /sdcard/tab-events-1.xml output/tab-events-1.xml || true
-            for i in 2 3 4 5; do adb shell input swipe 540 1400 540 400 500 || true; sleep 2; adb exec-out screencap -p > output/tab-events-$i.png || true; adb shell uiautomator dump /sdcard/tab-events-$i.xml || true; adb pull /sdcard/tab-events-$i.xml output/tab-events-$i.xml || true; done
-            # News (x=972)
-            adb shell input tap 972 2150 || true
+            adb pull /sdcard/tab-events-1.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-events-2.png || true
+            adb shell uiautomator dump /sdcard/tab-events-2.xml || true
+            adb pull /sdcard/tab-events-2.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-events-3.png || true
+            adb shell uiautomator dump /sdcard/tab-events-3.xml || true
+            adb pull /sdcard/tab-events-3.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-events-4.png || true
+            adb shell uiautomator dump /sdcard/tab-events-4.xml || true
+            adb pull /sdcard/tab-events-4.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-events-5.png || true
+            adb shell uiautomator dump /sdcard/tab-events-5.xml || true
+            adb pull /sdcard/tab-events-5.xml output/ || true
+            # News tab
+            adb shell input tap 972 2150
             sleep 4
             adb exec-out screencap -p > output/tab-news-1.png || true
             adb shell uiautomator dump /sdcard/tab-news-1.xml || true
-            adb pull /sdcard/tab-news-1.xml output/tab-news-1.xml || true
-            for i in 2 3 4 5; do adb shell input swipe 540 1400 540 400 500 || true; sleep 2; adb exec-out screencap -p > output/tab-news-$i.png || true; adb shell uiautomator dump /sdcard/tab-news-$i.xml || true; adb pull /sdcard/tab-news-$i.xml output/tab-news-$i.xml || true; done
-            adb shell logcat -d > output/logcat.txt || true
-            ls -lh output
-
-      - name: Upload PSX session output
+            adb pull /sdcard/tab-news-1.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-news-2.png || true
+            adb shell uiautomator dump /sdcard/tab-news-2.xml || true
+            adb pull /sdcard/tab-news-2.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-news-3.png || true
+            adb shell uiautomator dump /sdcard/tab-news-3.xml || true
+            adb pull /sdcard/tab-news-3.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-news-4.png || true
+            adb shell uiautomator dump /sdcard/tab-news-4.xml || true
+            adb pull /sdcard/tab-news-4.xml output/ || true
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/tab-news-5.png || true
+            adb shell uiautomator dump /sdcard/tab-news-5.xml || true
+            adb pull /sdcard/tab-news-5.xml output/ || true
+            ls -la output
+      - name: Upload PSX tabs output
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: psx-tabs-output
           path: output/
-          if-no-files-found: error
-          retention-days: 7
+          if-no-files-found: warn
