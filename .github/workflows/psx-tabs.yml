@@ -80,8 +80,70 @@ jobs:
             adb shell "dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'" > output/focus.txt || true
             adb shell monkey -p com.paradox.psxanalyze -c android.intent.category.LAUNCHER 1 || true
             sleep 3
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x1.png
+            adb shell uiautomator dump /sdcard/market-x1.xml
+            adb pull /sdcard/market-x1.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x2.png
+            adb shell uiautomator dump /sdcard/market-x2.xml
+            adb pull /sdcard/market-x2.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x3.png
+            adb shell uiautomator dump /sdcard/market-x3.xml
+            adb pull /sdcard/market-x3.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x4.png
+            adb shell uiautomator dump /sdcard/market-x4.xml
+            adb pull /sdcard/market-x4.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x5.png
+            adb shell uiautomator dump /sdcard/market-x5.xml
+            adb pull /sdcard/market-x5.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x6.png
+            adb shell uiautomator dump /sdcard/market-x6.xml
+            adb pull /sdcard/market-x6.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x7.png
+            adb shell uiautomator dump /sdcard/market-x7.xml
+            adb pull /sdcard/market-x7.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x8.png
+            adb shell uiautomator dump /sdcard/market-x8.xml
+            adb pull /sdcard/market-x8.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x9.png
+            adb shell uiautomator dump /sdcard/market-x9.xml
+            adb pull /sdcard/market-x9.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x10.png
+            adb shell uiautomator dump /sdcard/market-x10.xml
+            adb pull /sdcard/market-x10.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x11.png
+            adb shell uiautomator dump /sdcard/market-x11.xml
+            adb pull /sdcard/market-x11.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x12.png
+            adb shell uiautomator dump /sdcard/market-x12.xml
+            adb pull /sdcard/market-x12.xml output/
+            adb shell monkey -p com.paradox.psxanalyze -c android.intent.category.LAUNCHER 1
+            sleep 3
             # Stocks tab
-            adb shell input tap 324 2150
+            adb shell input tap 324 1689
             sleep 4
             adb exec-out screencap -p > output/tab-stocks-1.png || true
             adb shell uiautomator dump /sdcard/tab-stocks-1.xml || true
@@ -107,7 +169,7 @@ jobs:
             adb shell uiautomator dump /sdcard/tab-stocks-5.xml || true
             adb pull /sdcard/tab-stocks-5.xml output/ || true
             # Portfolio tab
-            adb shell input tap 540 2150
+            adb shell input tap 540 1689
             sleep 4
             adb exec-out screencap -p > output/tab-portfolio-1.png || true
             adb shell uiautomator dump /sdcard/tab-portfolio-1.xml || true
@@ -133,7 +195,7 @@ jobs:
             adb shell uiautomator dump /sdcard/tab-portfolio-5.xml || true
             adb pull /sdcard/tab-portfolio-5.xml output/ || true
             # Events tab
-            adb shell input tap 756 2150
+            adb shell input tap 756 1689
             sleep 4
             adb exec-out screencap -p > output/tab-events-1.png || true
             adb shell uiautomator dump /sdcard/tab-events-1.xml || true
@@ -159,7 +221,7 @@ jobs:
             adb shell uiautomator dump /sdcard/tab-events-5.xml || true
             adb pull /sdcard/tab-events-5.xml output/ || true
             # News tab
-            adb shell input tap 972 2150
+            adb shell input tap 972 1689
             sleep 4
             adb exec-out screencap -p > output/tab-news-1.png || true
             adb shell uiautomator dump /sdcard/tab-news-1.xml || true
