@@ -1,0 +1,255 @@
+name: PSX Deep Scroll
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: 'APK URL'
+        required: false
+        default: 'https://github.com/asifweb005/dscm-android-test/releases/download/psx-v1/app-release.apk'
+
+jobs:
+  psx-session:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Download APK
+        run: |
+          mkdir -p output
+          curl -L -o app-release.apk "${{ inputs.apk_url }}"
+          ls -lh app-release.apk
+          file app-release.apk || true
+
+      - name: Run PSX session on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb wait-for-device
+            for i in $(seq 1 30); do B=$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r'); echo "boot check $i: $B"; if [ "$B" = "1" ]; then break; fi; sleep 5; done
+            adb install -r app-release.apk
+            adb shell monkey -p com.example.psxapp -c android.intent.category.LAUNCHER 1 || true
+            sleep 5
+            adb shell uiautomator dump /sdcard/dump1.xml || true
+            adb pull /sdcard/dump1.xml output/dump1.xml || true
+            python3 -c 'import re,os,subprocess,time; xml=open("output/dump1.xml").read(); m=re.search(r"class=.android.widget.EditText.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml); print("NAME_FIELD" if m else "NO_NAME_FIELD"); subprocess.run(["adb","shell","input","tap",str((int(m.group(1))+int(m.group(3)))//2),str((int(m.group(2))+int(m.group(4)))//2)]) if m else None; time.sleep(1); subprocess.run(["adb","shell","input","text","AXF"]) if m else None' || true
+            sleep 2
+            adb shell uiautomator dump /sdcard/dump2.xml || true
+            adb pull /sdcard/dump2.xml output/dump2.xml || true
+            python3 -c 'import re,os; xml=open("output/dump2.xml").read(); ms=[re.search(r"(?:text|content-desc)=."+p+r".[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) for p in ["Continue","Get Started","Start","Done","OK","Next","Create","Save","Enter","Proceed","Confirm"]]; m=next((x for x in ms if x and int(x.group(3))>int(x.group(1)) and int(x.group(4))>int(x.group(2))), None); print("CONFIRM_TAP" if m else "NO_CONFIRM"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            sleep 3
+            adb shell uiautomator dump /sdcard/dump3.xml || true
+            adb pull /sdcard/dump3.xml output/dump3.xml || true
+            python3 -c 'import re,os; xml=open("output/dump3.xml").read(); m=re.search(r"content-desc=.Decline.[^>]*bounds=.\[(\d+),(\d+)\]\[(\d+),(\d+)\].", xml) if "Allow notifications" in xml else None; print("NOTIF_DECLINED" if m else "NO_NOTIF"); os.system("adb shell input tap %d %d" % ((int(m.group(1))+int(m.group(3)))//2,(int(m.group(2))+int(m.group(4)))//2)) if m else None' || true
+            sleep 2
+            adb shell uiautomator dump /sdcard/dump4.xml || true
+            adb pull /sdcard/dump4.xml output/dump4.xml || true
+            adb shell input tap 540 2050 || true
+            sleep 3
+            adb exec-out screencap -p > output/05-final.png || true
+            adb shell uiautomator dump /sdcard/dump5.xml || true
+            adb pull /sdcard/dump5.xml output/dump5.xml || true
+            adb shell dumpsys package com.example.psxapp > output/package.txt || true
+            adb logcat -d > output/logcat.txt || true
+            ls -la output
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-1.png
+            adb shell uiautomator dump /sdcard/deep-1.xml
+            adb pull /sdcard/deep-1.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-2.png
+            adb shell uiautomator dump /sdcard/deep-2.xml
+            adb pull /sdcard/deep-2.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-3.png
+            adb shell uiautomator dump /sdcard/deep-3.xml
+            adb pull /sdcard/deep-3.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-4.png
+            adb shell uiautomator dump /sdcard/deep-4.xml
+            adb pull /sdcard/deep-4.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-5.png
+            adb shell uiautomator dump /sdcard/deep-5.xml
+            adb pull /sdcard/deep-5.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-6.png
+            adb shell uiautomator dump /sdcard/deep-6.xml
+            adb pull /sdcard/deep-6.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-7.png
+            adb shell uiautomator dump /sdcard/deep-7.xml
+            adb pull /sdcard/deep-7.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-8.png
+            adb shell uiautomator dump /sdcard/deep-8.xml
+            adb pull /sdcard/deep-8.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-9.png
+            adb shell uiautomator dump /sdcard/deep-9.xml
+            adb pull /sdcard/deep-9.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-10.png
+            adb shell uiautomator dump /sdcard/deep-10.xml
+            adb pull /sdcard/deep-10.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-11.png
+            adb shell uiautomator dump /sdcard/deep-11.xml
+            adb pull /sdcard/deep-11.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-12.png
+            adb shell uiautomator dump /sdcard/deep-12.xml
+            adb pull /sdcard/deep-12.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-13.png
+            adb shell uiautomator dump /sdcard/deep-13.xml
+            adb pull /sdcard/deep-13.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-14.png
+            adb shell uiautomator dump /sdcard/deep-14.xml
+            adb pull /sdcard/deep-14.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-15.png
+            adb shell uiautomator dump /sdcard/deep-15.xml
+            adb pull /sdcard/deep-15.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-16.png
+            adb shell uiautomator dump /sdcard/deep-16.xml
+            adb pull /sdcard/deep-16.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-17.png
+            adb shell uiautomator dump /sdcard/deep-17.xml
+            adb pull /sdcard/deep-17.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-18.png
+            adb shell uiautomator dump /sdcard/deep-18.xml
+            adb pull /sdcard/deep-18.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-19.png
+            adb shell uiautomator dump /sdcard/deep-19.xml
+            adb pull /sdcard/deep-19.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-20.png
+            adb shell uiautomator dump /sdcard/deep-20.xml
+            adb pull /sdcard/deep-20.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-21.png
+            adb shell uiautomator dump /sdcard/deep-21.xml
+            adb pull /sdcard/deep-21.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-22.png
+            adb shell uiautomator dump /sdcard/deep-22.xml
+            adb pull /sdcard/deep-22.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-23.png
+            adb shell uiautomator dump /sdcard/deep-23.xml
+            adb pull /sdcard/deep-23.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-24.png
+            adb shell uiautomator dump /sdcard/deep-24.xml
+            adb pull /sdcard/deep-24.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-25.png
+            adb shell uiautomator dump /sdcard/deep-25.xml
+            adb pull /sdcard/deep-25.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-26.png
+            adb shell uiautomator dump /sdcard/deep-26.xml
+            adb pull /sdcard/deep-26.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-27.png
+            adb shell uiautomator dump /sdcard/deep-27.xml
+            adb pull /sdcard/deep-27.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-28.png
+            adb shell uiautomator dump /sdcard/deep-28.xml
+            adb pull /sdcard/deep-28.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-29.png
+            adb shell uiautomator dump /sdcard/deep-29.xml
+            adb pull /sdcard/deep-29.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-30.png
+            adb shell uiautomator dump /sdcard/deep-30.xml
+            adb pull /sdcard/deep-30.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-31.png
+            adb shell uiautomator dump /sdcard/deep-31.xml
+            adb pull /sdcard/deep-31.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-32.png
+            adb shell uiautomator dump /sdcard/deep-32.xml
+            adb pull /sdcard/deep-32.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-33.png
+            adb shell uiautomator dump /sdcard/deep-33.xml
+            adb pull /sdcard/deep-33.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/deep-34.png
+            adb shell uiautomator dump /sdcard/deep-34.xml
+            adb pull /sdcard/deep-34.xml output/
+
+      - name: Upload output
+        uses: actions/upload-artifact@v4
+        with:
+          name: psx-deep-output
+          path: output/
