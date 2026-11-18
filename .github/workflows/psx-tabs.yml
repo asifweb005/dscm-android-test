@@ -140,6 +140,127 @@ jobs:
             adb exec-out screencap -p > output/market-x12.png
             adb shell uiautomator dump /sdcard/market-x12.xml
             adb pull /sdcard/market-x12.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x13.png
+            adb shell uiautomator dump /sdcard/market-x13.xml
+            adb pull /sdcard/market-x13.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x14.png
+            adb shell uiautomator dump /sdcard/market-x14.xml
+            adb pull /sdcard/market-x14.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x15.png
+            adb shell uiautomator dump /sdcard/market-x15.xml
+            adb pull /sdcard/market-x15.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x16.png
+            adb shell uiautomator dump /sdcard/market-x16.xml
+            adb pull /sdcard/market-x16.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x17.png
+            adb shell uiautomator dump /sdcard/market-x17.xml
+            adb pull /sdcard/market-x17.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x18.png
+            adb shell uiautomator dump /sdcard/market-x18.xml
+            adb pull /sdcard/market-x18.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x19.png
+            adb shell uiautomator dump /sdcard/market-x19.xml
+            adb pull /sdcard/market-x19.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x20.png
+            adb shell uiautomator dump /sdcard/market-x20.xml
+            adb pull /sdcard/market-x20.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x21.png
+            adb shell uiautomator dump /sdcard/market-x21.xml
+            adb pull /sdcard/market-x21.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x22.png
+            adb shell uiautomator dump /sdcard/market-x22.xml
+            adb pull /sdcard/market-x22.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x23.png
+            adb shell uiautomator dump /sdcard/market-x23.xml
+            adb pull /sdcard/market-x23.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x24.png
+            adb shell uiautomator dump /sdcard/market-x24.xml
+            adb pull /sdcard/market-x24.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x25.png
+            adb shell uiautomator dump /sdcard/market-x25.xml
+            adb pull /sdcard/market-x25.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x26.png
+            adb shell uiautomator dump /sdcard/market-x26.xml
+            adb pull /sdcard/market-x26.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x27.png
+            adb shell uiautomator dump /sdcard/market-x27.xml
+            adb pull /sdcard/market-x27.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x28.png
+            adb shell uiautomator dump /sdcard/market-x28.xml
+            adb pull /sdcard/market-x28.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x29.png
+            adb shell uiautomator dump /sdcard/market-x29.xml
+            adb pull /sdcard/market-x29.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x30.png
+            adb shell uiautomator dump /sdcard/market-x30.xml
+            adb pull /sdcard/market-x30.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x31.png
+            adb shell uiautomator dump /sdcard/market-x31.xml
+            adb pull /sdcard/market-x31.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x32.png
+            adb shell uiautomator dump /sdcard/market-x32.xml
+            adb pull /sdcard/market-x32.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x33.png
+            adb shell uiautomator dump /sdcard/market-x33.xml
+            adb pull /sdcard/market-x33.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x34.png
+            adb shell uiautomator dump /sdcard/market-x34.xml
+            adb pull /sdcard/market-x34.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x35.png
+            adb shell uiautomator dump /sdcard/market-x35.xml
+            adb pull /sdcard/market-x35.xml output/
+            adb shell input swipe 540 1400 540 400 500
+            sleep 2
+            adb exec-out screencap -p > output/market-x36.png
+            adb shell uiautomator dump /sdcard/market-x36.xml
+            adb pull /sdcard/market-x36.xml output/
+            
             adb shell monkey -p com.paradox.psxanalyze -c android.intent.category.LAUNCHER 1
             sleep 3
             # Stocks tab
