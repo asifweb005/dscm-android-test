@@ -260,7 +260,6 @@ jobs:
             adb exec-out screencap -p > output/market-x36.png
             adb shell uiautomator dump /sdcard/market-x36.xml
             adb pull /sdcard/market-x36.xml output/
-            
             adb shell monkey -p com.paradox.psxanalyze -c android.intent.category.LAUNCHER 1
             sleep 3
             # Stocks tab
