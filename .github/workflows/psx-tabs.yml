@@ -1,0 +1,111 @@
+name: PSX Tabs
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "APK download URL (direct .apk link)"
+        required: true
+        default: "https://github.com/axf-1/PSX-Analyze/releases/download/untagged-3a1db9ed7e6c2a8c1d3c/app-release.apk"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  psx-modules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install PSX Analyze, enter AXF, scroll-capture all Market modules
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            echo "RAM $(( $(free -m | awk '/^Mem:/{print $2}') ))MB CPU $(nproc) disk $(df -h / | awk 'NR==2{print $4}')"
+            adb wait-for-device
+            adb shell wm size 1080x2400 || true
+            adb shell wm density 420 || true
+            adb shell settings put global window_animation_scale 0 || true
+            adb shell settings put global transition_animation_scale 0 || true
+            adb shell settings put global animator_duration_scale 0 || true
+            adb shell settings put system screen_off_timeout 1800000 || true
+            adb shell svc power stayon true || true
+            mkdir -p output
+            curl -L -o /tmp/app.apk "${{ inputs.apk_url }}" || wget -O /tmp/app.apk "${{ inputs.apk_url }}"
+            ls -lh /tmp/app.apk
+            file /tmp/app.apk || true
+            adb install -r -g /tmp/app.apk > output/install.txt 2>&1 || { cat output/install.txt; exit 1; }
+            cat output/install.txt
+            adb shell pm list packages | grep -i psx > output/package.txt || adb shell pm list packages > output/package.txt
+            cat output/package.txt
+            adb shell monkey -p com.axf.psxanalyze -c android.intent.category.LAUNCHER 1 || true
+            sleep 5
+            adb exec-out screencap -p > output/01-home.png || true
+            adb shell uiautomator dump /sdcard/dump.xml || true
+            adb pull /sdcard/dump.xml output/dump01.xml || true
+            # Enter AXF, dismiss dialogs, open Market (default tab), scroll whole Market
+            adb shell input tap 540 1900 || true
+            sleep 3
+            adb shell input text AXF || true
+            sleep 2
+            adb shell input tap 540 1000 || true
+            sleep 2
+            adb shell input tap 540 700 || true
+            sleep 2
+            adb exec-out screencap -p > output/02-after-name.png || true
+            adb shell uiautomator dump /sdcard/dump.xml || true
+            adb pull /sdcard/dump.xml output/dump02.xml || true
+            # --- Tab capture: Stocks, Portfolio, Events, News (bottom tab bar y=2150) ---
+            # Stocks (x=324)
+            adb shell input tap 324 2150 || true
+            sleep 4
+            adb exec-out screencap -p > output/tab-stocks-1.png || true
+            adb shell uiautomator dump /sdcard/tab-stocks-1.xml || true
+            adb pull /sdcard/tab-stocks-1.xml output/tab-stocks-1.xml || true
+            for i in 2 3 4 5; do adb shell input swipe 540 1400 540 400 500 || true; sleep 2; adb exec-out screencap -p > output/tab-stocks-$i.png || true; adb shell uiautomator dump /sdcard/tab-stocks-$i.xml || true; adb pull /sdcard/tab-stocks-$i.xml output/tab-stocks-$i.xml || true; done
+            # Portfolio (x=540)
+            adb shell input tap 540 2150 || true
+            sleep 4
+            adb exec-out screencap -p > output/tab-portfolio-1.png || true
+            adb shell uiautomator dump /sdcard/tab-portfolio-1.xml || true
+            adb pull /sdcard/tab-portfolio-1.xml output/tab-portfolio-1.xml || true
+            for i in 2 3 4 5; do adb shell input swipe 540 1400 540 400 500 || true; sleep 2; adb exec-out screencap -p > output/tab-portfolio-$i.png || true; adb shell uiautomator dump /sdcard/tab-portfolio-$i.xml || true; adb pull /sdcard/tab-portfolio-$i.xml output/tab-portfolio-$i.xml || true; done
+            # Events (x=756)
+            adb shell input tap 756 2150 || true
+            sleep 4
+            adb exec-out screencap -p > output/tab-events-1.png || true
+            adb shell uiautomator dump /sdcard/tab-events-1.xml || true
+            adb pull /sdcard/tab-events-1.xml output/tab-events-1.xml || true
+            for i in 2 3 4 5; do adb shell input swipe 540 1400 540 400 500 || true; sleep 2; adb exec-out screencap -p > output/tab-events-$i.png || true; adb shell uiautomator dump /sdcard/tab-events-$i.xml || true; adb pull /sdcard/tab-events-$i.xml output/tab-events-$i.xml || true; done
+            # News (x=972)
+            adb shell input tap 972 2150 || true
+            sleep 4
+            adb exec-out screencap -p > output/tab-news-1.png || true
+            adb shell uiautomator dump /sdcard/tab-news-1.xml || true
+            adb pull /sdcard/tab-news-1.xml output/tab-news-1.xml || true
+            for i in 2 3 4 5; do adb shell input swipe 540 1400 540 400 500 || true; sleep 2; adb exec-out screencap -p > output/tab-news-$i.png || true; adb shell uiautomator dump /sdcard/tab-news-$i.xml || true; adb pull /sdcard/tab-news-$i.xml output/tab-news-$i.xml || true; done
+            adb shell logcat -d > output/logcat.txt || true
+            ls -lh output
+
+      - name: Upload PSX session output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: psx-tabs-output
+          path: output/
+          if-no-files-found: error
+          retention-days: 7
