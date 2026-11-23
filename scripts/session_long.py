@@ -67,6 +67,16 @@ if t:
 else:
     write("session-log.txt", "Start playing NOT FOUND")
 time.sleep(8)
+
+# Notifications permission dialog -> Decline
+xml = dump_ui("dump_notif.xml")
+t = find_tap(xml, "Decline")
+if t:
+    run("adb shell input tap %d %d" % t)
+    write("session-log.txt", "TAP Decline notifications %s label" % (t,))
+    time.sleep(5)
+else:
+    write("session-log.txt", "Decline notifications NOT FOUND")
 shot("04-lobby.png")
 
 start = time.time()
