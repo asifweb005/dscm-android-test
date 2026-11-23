@@ -1,0 +1,129 @@
+name: Android Session 20
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "Direct download URL of the APK to install"
+        required: true
+      package:
+        description: "App package to launch after install"
+        required: false
+        default: "com.paradox.dscm"
+      wait_seconds:
+        description: "Seconds to wait after launching before screenshots"
+        required: false
+        default: "30"
+
+jobs:
+  android-session:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: "api29-pixel",   api: 29, profile: "pixel" }
+          - { label: "api29-nexus5",  api: 29, profile: "Nexus 5" }
+          - { label: "api29-pixel3",  api: 29, profile: "pixel_3" }
+          - { label: "api30-pixel",   api: 30, profile: "pixel" }
+          - { label: "api30-nexus5",  api: 30, profile: "Nexus 5" }
+          - { label: "api30-pixel2",  api: 30, profile: "pixel_2" }
+          - { label: "api31-pixel",   api: 31, profile: "pixel" }
+          - { label: "api31-pixel2",  api: 31, profile: "pixel_2" }
+          - { label: "api31-nexus6",  api: 31, profile: "Nexus 6" }
+          - { label: "api32-pixel",   api: 32, profile: "pixel" }
+          - { label: "api32-nexus5",  api: 32, profile: "Nexus 5" }
+          - { label: "api32-pixel3",  api: 32, profile: "pixel_3" }
+          - { label: "api33-pixel",   api: 33, profile: "pixel" }
+          - { label: "api33-pixel2",  api: 33, profile: "pixel_2" }
+          - { label: "api33-nexus5x", api: 33, profile: "Nexus 5X" }
+          - { label: "api33-nexus6",  api: 33, profile: "Nexus 6" }
+          - { label: "api34-pixel",   api: 34, profile: "pixel" }
+          - { label: "api34-pixel2",  api: 34, profile: "pixel_2" }
+          - { label: "api34-pixel3",  api: 34, profile: "pixel_3" }
+          - { label: "api34-nexus5",  api: 34, profile: "Nexus 5" }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Boot emulator, install APK, guest taps, screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          APK_URL: ${{ inputs.apk_url }}
+          PKG: ${{ inputs.package }}
+          WAIT_SECONDS: ${{ inputs.wait_seconds }}
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: ${{ matrix.profile }}
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            mkdir -p output
+            echo "LABEL=${{ matrix.label }} API=${{ matrix.api }} PROFILE=${{ matrix.profile }}" | tee output/config.txt
+            curl -L "$APK_URL" -o app.apk
+            ls -l app.apk | tee output/install.txt
+            adb install -r app.apk 2>&1 | tee -a output/install.txt
+            adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 || true
+            sleep "$WAIT_SECONDS"
+            adb exec-out screencap -p > output/02-app.png
+            tap_label() {
+              adb shell uiautomator dump /sdcard/dump_tap.xml || true
+              adb pull /sdcard/dump_tap.xml output/dump_last.xml || true
+              python3 -c "
+            import re,sys,os,subprocess
+            xml=open('output/dump_last.xml').read() if os.path.exists('output/dump_last.xml') else ''
+            pat=sys.argv[1]
+            m=re.search(r'(?:content-desc|text)=\"[^\"]*'+pat+r'[^\"]*\"[^>]*bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]\"', xml)
+            if m:
+                x=(int(m.group(1))+int(m.group(3)))//2; y=(int(m.group(2))+int(m.group(4)))//2; src='label'
+            else:
+                size=subprocess.check_output(['adb','shell','wm','size']).decode()
+                mm=re.search(r'(\d+)x(\d+)', size); w=int(mm.group(1)); h=int(mm.group(2))
+                x=w//2; y=int(h*float(sys.argv[2])); src='fallback'
+            print('TAP', pat, x, y, src)
+            os.system('adb shell input tap %d %d' % (x,y))
+            " "$1" "$2" | tee -a output/taps.txt
+            }
+            tap_label "Continue as guest" 0.71
+            sleep 10
+            adb exec-out screencap -p > output/03-after-guest.png
+            adb shell uiautomator dump /sdcard/dump_game.xml || true
+            adb pull /sdcard/dump_game.xml output/dump_game.xml || true
+            python3 -c "
+            import re,os
+            xml=open('output/dump_game.xml').read() if os.path.exists('output/dump_game.xml') else ''
+            names=['Ludo','Chess','Carrom','Dominoes','Snakes']
+            done=False
+            for n in names:
+                m=re.search(r'(?:content-desc|text)=\"[^\"]*'+n+r'[^\"]*\"[^>]*bounds=\"\[(\d+),(\d+)\]\[(\d+),(\d+)\]\"', xml)
+                if m:
+                    x=(int(m.group(1))+int(m.group(3)))//2; y=(int(m.group(2))+int(m.group(4)))//2
+                    print('GAME TAP', n, x, y)
+                    os.system('adb shell input tap %d %d' % (x,y))
+                    done=True
+                    break
+            if not done:
+                print('GAME TAP none-found, swipe up')
+                os.system('adb shell input swipe 500 1500 500 700 300')
+            " | tee -a output/taps.txt
+            sleep 8
+            adb exec-out screencap -p > output/04-game.png
+            adb logcat -d > output/logcat.txt || true
+            ls -la output
+
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-session-${{ matrix.label }}
+          path: output/
+          if-no-files-found: warn
