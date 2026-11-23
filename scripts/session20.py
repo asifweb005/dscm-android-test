@@ -72,6 +72,16 @@ if t:
 else:
     write("taps.txt", "Start playing NOT FOUND")
 time.sleep(8)
+
+# Notifications permission dialog -> Decline
+xml = dump_ui("dump_notif.xml")
+t = find_tap(xml, "Decline")
+if t:
+    tap(*t)
+    write("taps.txt", "TAP Decline notifications %s label" % (t,))
+    time.sleep(5)
+else:
+    write("taps.txt", "Decline notifications NOT FOUND")
 shot("04-lobby.png")
 
 xml = dump_ui("dump_game.xml")
