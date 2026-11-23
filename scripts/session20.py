@@ -3,6 +3,7 @@ import os, re, subprocess, time
 PKG = os.environ.get("PKG", "com.paradox.dscm")
 APK_URL = os.environ["APK_URL"]
 WAIT = int(os.environ.get("WAIT_SECONDS", "30"))
+API = os.environ.get("API", "")
 
 def run(cmd):
     print("+", cmd, flush=True)
@@ -36,7 +37,7 @@ def shot(name):
     run("adb exec-out screencap -p > output/" + name)
 
 os.makedirs("output", exist_ok=True)
-write("config.txt", "LABEL=%s API=%s PROFILE=%s" % (os.environ.get("LABEL", ""), os.environ.get("API", ""), os.environ.get("PROFILE", "")))
+write("config.txt", "LABEL=%s API=%s PROFILE=%s" % (os.environ.get("LABEL", ""), API, os.environ.get("PROFILE", "")))
 run("curl -L '" + APK_URL + "' -o app.apk")
 write("install.txt", sh("ls -l app.apk"))
 write("install.txt", sh("adb install -r app.apk"))
@@ -55,8 +56,23 @@ else:
     w, h = (int(m.group(1)), int(m.group(2))) if m else (1080, 2400)
     tap(w // 2, int(h * 0.71))
     write("taps.txt", "TAP Continue as guest fallback %d %d" % (w // 2, int(h * 0.71)))
-time.sleep(10)
+time.sleep(6)
 shot("03-after-guest.png")
+
+# Nickname step: "What should we call you?" -> type a name -> "Start playing"
+player_name = "Tester" + (API if API else "1")
+run('adb shell input text "%s"' % player_name)
+write("taps.txt", "TYPE name %s" % player_name)
+time.sleep(2)
+xml = dump_ui("dump_name.xml")
+t = find_tap(xml, "Start playing")
+if t:
+    tap(*t)
+    write("taps.txt", "TAP Start playing %s label" % (t,))
+else:
+    write("taps.txt", "Start playing NOT FOUND")
+time.sleep(8)
+shot("04-lobby.png")
 
 xml = dump_ui("dump_game.xml")
 done = False
@@ -71,7 +87,7 @@ if not done:
     write("taps.txt", "GAME TAP none-found, swipe up")
     run("adb shell input swipe 500 1500 500 700 300")
 time.sleep(8)
-shot("04-game.png")
+shot("05-game.png")
 run("adb logcat -d > output/logcat.txt")
 run("ls -la output")
 print("SESSION20 DONE")
