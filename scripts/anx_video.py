@@ -23,6 +23,15 @@ def find_tap(xml, pattern):
     if not m:
         return None
     return ((int(m.group(1)) + int(m.group(3))) // 2, (int(m.group(2)) + int(m.group(4))) // 2)
+def find_switch(xml):
+    m = re.search(r'class="android.widget.Switch"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
+    if not m:
+        return None
+    return ((int(m.group(1)) + int(m.group(3))) // 2, (int(m.group(2)) + int(m.group(4))) // 2)
+def top_pkg():
+    out = sh("adb shell dumpsys activity activities")
+    m = re.search(r"topResumedActivity=ActivityRecord\{[^ ]* [^ ]* ([a-zA-Z0-9_.]+)/", out)
+    return m.group(1) if m else "?"
 def size():
     m = re.search(r"(\d+)x(\d+)", sh("adb shell wm size"))
     return (int(m.group(1)), int(m.group(2))) if m else (1080, 1920)
@@ -48,21 +57,29 @@ time.sleep(2)
 run("adb shell monkey -p " + PKG + " -c android.intent.category.LAUNCHER 1")
 time.sleep(9)
 shot("01-launch.png")
-# ANX shows a 'Storage Access Required' card with an 'Open Settings' button (Flutter: no text in UI dump, use coordinates)
-tapf(0.676, 0.569, "open-settings")
-time.sleep(5)
+# 'Storage Access Required' card: 'Open Settings' button centre measured from run screenshots
+for attempt in range(3):
+    tapf(0.676, 0.605, "open-settings-%d" % attempt)
+    time.sleep(5)
+    write("taps.txt", "top after open-settings %d: %s" % (attempt, top_pkg()))
+    if "settings" in top_pkg().lower():
+        break
 shot("02-settings.png")
 xml = dump_ui("dump_settings.xml")
-t = find_tap(xml, "Allow access to manage all files") or find_tap(xml, "Allow access") or find_tap(xml, "manage all files")
-if t:
-    run("adb shell input tap %d %d" % t)
-    write("taps.txt", "settings-label TAP %s" % (t,))
+sw = find_switch(xml)
+row = find_tap(xml, "Allow access to manage all files") or find_tap(xml, "Allow access")
+if sw:
+    run("adb shell input tap %d %d" % sw)
+    write("taps.txt", "settings SWITCH TAP %s" % (sw,))
+elif row:
+    run("adb shell input tap %d %d" % (int(W * 0.885), row[1]))
+    write("taps.txt", "settings ROW TAP y=%d" % row[1])
 else:
-    # fallback: the toggle switch sits at the right end of that row
     tapf(0.885, 0.295, "settings-toggle-fallback")
 time.sleep(3)
 shot("03-toggle.png")
-# Backup grant in case the toggle tap missed (the on-camera action above already happened)
+write("taps.txt", "appops BEFORE backup: " + sh("adb shell appops get " + PKG + " MANAGE_EXTERNAL_STORAGE").strip().replace("\n", " | "))
+# Backup grant only if the on-camera toggle did not take effect
 run("adb shell appops set --uid " + PKG + " MANAGE_EXTERNAL_STORAGE allow")
 run("adb shell input keyevent 4")
 time.sleep(4)
@@ -70,25 +87,16 @@ shot("04-back-in-app.png")
 run("adb shell monkey -p " + PKG + " -c android.intent.category.LAUNCHER 1")
 time.sleep(6)
 shot("05-library.png")
-# Folders view (toggle at top of Library)
-tapf(0.269, 0.316, "folders-tab")
+# Folders list is the default Library view: rows are 0 (y .46), Download (y .565), Movies (y .665)
+tapf(0.50, 0.665, "movies-folder")
 time.sleep(5)
-shot("06-folders.png")
-# Open the first folder row (Movies)
-tapf(0.50, 0.46, "folder-row")
-time.sleep(5)
-shot("07-folder-open.png")
-run("adb shell input keyevent 4")
-time.sleep(3)
-# Videos view and play the sample video
-tapf(0.72, 0.316, "videos-tab")
-time.sleep(5)
-shot("08-videos.png")
-tapf(0.50, 0.46, "video-row")
+shot("06-movies-folder.png")
+# Inside Movies: tap the sample video row to play it
+tapf(0.55, 0.40, "video-row")
 time.sleep(12)
-shot("09-playing.png")
+shot("07-playing.png")
 time.sleep(8)
-shot("10-playing2.png")
+shot("08-playing2.png")
 run("adb shell pkill -INT screenrecord")
 time.sleep(3)
 try:
@@ -98,4 +106,4 @@ except Exception:
 run("adb pull /sdcard/anx.mp4 output/anx-declaration.mp4")
 write("result.txt", sh("ls -l output/"))
 run("adb logcat -d > output/logcat.txt")
-print("ANX VIDEO V2 DONE")
+print("ANX VIDEO V3 DONE")
