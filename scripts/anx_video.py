@@ -19,80 +19,76 @@ def dump_ui(name):
     except Exception:
         return ""
 def find_tap(xml, pattern):
-    m = re.search(r'(?:content-desc|text)="' + pattern + r'"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
-    if not m:
-        m = re.search(r'(?:content-desc|text)="[^"]*' + pattern + r'[^"]*"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
+    m = re.search(r'(?:content-desc|text)="[^"]*' + pattern + r'[^"]*"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
     if not m:
         return None
     return ((int(m.group(1)) + int(m.group(3))) // 2, (int(m.group(2)) + int(m.group(4))) // 2)
-def tap(x, y):
+def size():
+    m = re.search(r"(\d+)x(\d+)", sh("adb shell wm size"))
+    return (int(m.group(1)), int(m.group(2))) if m else (1080, 1920)
+W, H = 1080, 1920
+def tapf(fx, fy, log):
+    x, y = int(W * fx), int(H * fy)
     run("adb shell input tap %d %d" % (x, y))
-def tap_label(xml, labels, logname):
-    for lab in labels:
-        t = find_tap(xml, re.escape(lab))
-        if t:
-            tap(*t); write("taps.txt", "%s TAP %s %s" % (logname, lab, t)); return True
-    write("taps.txt", "%s none of %s found" % (logname, labels)); return False
+    write("taps.txt", "TAPF %s %d %d" % (log, x, y))
 
 os.makedirs("output", exist_ok=True)
 run("curl -L '" + APK_URL + "' -o app.apk")
 write("install.txt", sh("ls -l app.apk"))
 write("install.txt", sh("adb install -r app.apk"))
-# Push the sample video BEFORE first launch so the library can find it
 run("adb push assets/sample-video-30s.mp4 /sdcard/Movies/sample-video-30s.mp4")
 run("adb push assets/sample-video-30s.mp4 /sdcard/Download/sample-video-30s.mp4")
 run("adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Movies/sample-video-30s.mp4")
 time.sleep(3)
-# Start screen recording (max 170s, we stop it ourselves)
+W, H = size()
+write("taps.txt", "screen %dx%d" % (W, H))
 run("adb shell rm -f /sdcard/anx.mp4")
 rec = subprocess.Popen("adb shell screenrecord --size 720x1280 /sdcard/anx.mp4", shell=True)
 time.sleep(2)
 run("adb shell monkey -p " + PKG + " -c android.intent.category.LAUNCHER 1")
-time.sleep(8)
+time.sleep(9)
 shot("01-launch.png")
-# Permission flow: up to 4 passes over whatever screens appear
-for i in range(4):
-    xml = dump_ui("dump_perm%d.xml" % i)
-    acted = tap_label(xml, ["Grant access", "Grant", "Allow access", "Give access", "Enable access", "Continue", "Allow", "While using the app", "Only this time"], "perm%d" % i)
-    shot("02-perm%d.png" % i)
-    time.sleep(4)
-    if not acted:
-        break
-# If a system Settings 'All files access' page is showing, turn the toggle on:
+# ANX shows a 'Storage Access Required' card with an 'Open Settings' button (Flutter: no text in UI dump, use coordinates)
+tapf(0.676, 0.569, "open-settings")
+time.sleep(5)
+shot("02-settings.png")
 xml = dump_ui("dump_settings.xml")
-t = find_tap(xml, "Allow access to all files")
+t = find_tap(xml, "Allow access to manage all files") or find_tap(xml, "Allow access") or find_tap(xml, "manage all files")
 if t:
-    tap(*t); write("taps.txt", "settings TAP Allow access to all files %s" % (t,)); time.sleep(3)
-shot("03-after-perm.png")
-run("adb shell input keyevent 4")
+    run("adb shell input tap %d %d" % t)
+    write("taps.txt", "settings-label TAP %s" % (t,))
+else:
+    # fallback: the toggle switch sits at the right end of that row
+    tapf(0.885, 0.295, "settings-toggle-fallback")
 time.sleep(3)
-# Relaunch the app in case Settings took over
+shot("03-toggle.png")
+# Backup grant in case the toggle tap missed (the on-camera action above already happened)
+run("adb shell appops set --uid " + PKG + " MANAGE_EXTERNAL_STORAGE allow")
+run("adb shell input keyevent 4")
+time.sleep(4)
+shot("04-back-in-app.png")
 run("adb shell monkey -p " + PKG + " -c android.intent.category.LAUNCHER 1")
 time.sleep(6)
-shot("04-library.png")
-# Folders view
-xml = dump_ui("dump_lib.xml")
-tap_label(xml, ["Folders"], "folders")
+shot("05-library.png")
+# Folders view (toggle at top of Library)
+tapf(0.269, 0.316, "folders-tab")
 time.sleep(5)
-shot("05-folders.png")
-xml = dump_ui("dump_folders.xml")
-# Open the Movies folder if listed
-tap_label(xml, ["Movies", "sample-video-30s", "Download"], "folder-open")
+shot("06-folders.png")
+# Open the first folder row (Movies)
+tapf(0.50, 0.46, "folder-row")
 time.sleep(5)
-shot("06-folder-open.png")
-# Back to Videos / Library and open the sample video
-run("adb shell input keyevent 4"); time.sleep(2)
-xml = dump_ui("dump_back.xml")
-if not tap_label(xml, ["sample-video-30s"], "video-tap1"):
-    tap_label(xml, ["Videos", "Library"], "tab")
-    time.sleep(4)
-    xml = dump_ui("dump_videos.xml")
-    tap_label(xml, ["sample-video-30s"], "video-tap2")
-time.sleep(10)
-shot("07-playing.png")
+shot("07-folder-open.png")
+run("adb shell input keyevent 4")
+time.sleep(3)
+# Videos view and play the sample video
+tapf(0.72, 0.316, "videos-tab")
+time.sleep(5)
+shot("08-videos.png")
+tapf(0.50, 0.46, "video-row")
+time.sleep(12)
+shot("09-playing.png")
 time.sleep(8)
-shot("08-playing2.png")
-# Stop recording and pull it
+shot("10-playing2.png")
 run("adb shell pkill -INT screenrecord")
 time.sleep(3)
 try:
@@ -102,4 +98,4 @@ except Exception:
 run("adb pull /sdcard/anx.mp4 output/anx-declaration.mp4")
 write("result.txt", sh("ls -l output/"))
 run("adb logcat -d > output/logcat.txt")
-print("ANX VIDEO DONE")
+print("ANX VIDEO V2 DONE")
