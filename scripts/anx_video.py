@@ -82,10 +82,14 @@ write("taps.txt", "appops BEFORE backup: " + sh("adb shell appops get " + PKG + 
 # Backup grant only if the on-camera toggle did not take effect
 run("adb shell appops set --uid " + PKG + " MANAGE_EXTERNAL_STORAGE allow")
 run("adb shell input keyevent 4")
-time.sleep(4)
+time.sleep(3)
 shot("04-back-in-app.png")
+# Fresh relaunch: returning from Settings leaves a stale 'Try Again' screen,
+# while a cold start with the permission granted loads the library (proven in run 2)
+run("adb shell am force-stop " + PKG)
+time.sleep(2)
 run("adb shell monkey -p " + PKG + " -c android.intent.category.LAUNCHER 1")
-time.sleep(6)
+time.sleep(9)
 shot("05-library.png")
 # Folders list is the default Library view: rows are 0 (y .46), Download (y .565), Movies (y .665)
 tapf(0.50, 0.665, "movies-folder")
@@ -106,4 +110,4 @@ except Exception:
 run("adb pull /sdcard/anx.mp4 output/anx-declaration.mp4")
 write("result.txt", sh("ls -l output/"))
 run("adb logcat -d > output/logcat.txt")
-print("ANX VIDEO V3 DONE")
+print("ANX VIDEO V4 DONE")
